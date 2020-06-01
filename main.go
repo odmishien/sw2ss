@@ -18,5 +18,5 @@ func main() {
 	mins := int(diff.Minutes()) % 60
 	secs := int(diff.Seconds()) % 60
 
-	fmt.Printf("%d:%d:%d\n", hours, mins, secs)
+	fmt.Printf("result: %d:%d:%d\n", hours, mins, secs)
 }
