@@ -7,10 +7,12 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/BurntSushi/toml"
 	"golang.org/x/oauth2/google"
+	"golang.org/x/oauth2/jwt"
 	"google.golang.org/api/sheets/v4"
 )
 
@@ -23,13 +25,27 @@ type SheetConfig struct {
 	UpdateCell    string `toml:"updateCell"`
 }
 
-func readConfig() (Config, error) {
+func loadConfig() (Config, error) {
 	var config Config
-	_, err := toml.DecodeFile("config.toml", &config)
+	home := os.Getenv("HOME")
+	configDir := filepath.Join(home, ".config")
+	confFilePath := filepath.Join(configDir, "sw2ss", "config.toml")
+	_, err := toml.DecodeFile(confFilePath, &config)
 	if err != nil {
 		return config, err
 	}
 	return config, nil
+}
+
+func loadCredential() ([]byte, error) {
+	home := os.Getenv("HOME")
+	configDir := filepath.Join(home, ".config")
+	credentialFilePath := filepath.Join(configDir, "sw2ss", "credentials.json")
+	b, err := ioutil.ReadFile(credentialFilePath)
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
 }
 
 func getDuration(start time.Time, end time.Time) string {
@@ -40,6 +56,15 @@ func getDuration(start time.Time, end time.Time) string {
 	return fmt.Sprintf("%d:%d:%d\n", hours, mins, secs)
 }
 
+func getSheetClient(config *jwt.Config) (*sheets.Service, error) {
+	ctx := context.Background()
+	srv, err := sheets.New(config.Client(ctx))
+	if err != nil {
+		log.Fatalf("Unable to retrieve Sheets client: %v", err)
+	}
+	return srv, nil
+}
+
 func main() {
 	start := time.Now()
 	fmt.Printf("\x1b[36m%s\x1b[0m", "press Enter to stop your stopwatch!\n")
@@ -48,21 +73,20 @@ func main() {
 	duration := getDuration(start, end)
 	fmt.Printf("result: %s \n", duration)
 
-	b, err := ioutil.ReadFile("credentials.json")
+	credential, err := loadCredential()
 	if err != nil {
 		log.Fatalf("Unable to read client secret file: %v", err)
 	}
-	config, err := google.JWTConfigFromJSON(b, "https://www.googleapis.com/auth/spreadsheets")
+	config, err := google.JWTConfigFromJSON(credential, "https://www.googleapis.com/auth/spreadsheets")
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
-	ctx := context.Background()
-	srv, err := sheets.New(config.Client(ctx))
+	srv, err := getSheetClient(config)
 	if err != nil {
 		log.Fatalf("Unable to retrieve Sheets client: %v", err)
 	}
 
-	conf, err := readConfig()
+	conf, err := loadConfig()
 	if err != nil {
 		log.Fatalf("Unable to read config.toml: %v", err)
 	}
