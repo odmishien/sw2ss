@@ -25,11 +25,15 @@ type SheetConfig struct {
 	UpdateCell    string `toml:"updateCell"`
 }
 
+var Home = os.Getenv("HOME")
+var ConfigDir = ".config"
+var ProjectName = "sw2ss"
+var ConfigFileName = "config.toml"
+var CredentialFileName = "credentials.json"
+
 func loadConfig() (Config, error) {
 	var config Config
-	home := os.Getenv("HOME")
-	configDir := filepath.Join(home, ".config")
-	confFilePath := filepath.Join(configDir, "sw2ss", "config.toml")
+	confFilePath := filepath.Join(ConfigDir, ProjectName, ConfigFileName)
 	_, err := toml.DecodeFile(confFilePath, &config)
 	if err != nil {
 		return config, err
@@ -38,9 +42,7 @@ func loadConfig() (Config, error) {
 }
 
 func loadCredential() ([]byte, error) {
-	home := os.Getenv("HOME")
-	configDir := filepath.Join(home, ".config")
-	credentialFilePath := filepath.Join(configDir, "sw2ss", "credentials.json")
+	credentialFilePath := filepath.Join(ConfigDir, ProjectName, CredentialFileName)
 	b, err := ioutil.ReadFile(credentialFilePath)
 	if err != nil {
 		return nil, err
