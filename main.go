@@ -73,7 +73,8 @@ func getSheetClient(config *jwt.Config) (*sheets.Service, error) {
 
 func getCommand(args []string) (string, error) {
 	if len(args) == 0 {
-		return "", fmt.Errorf("invalid command")
+		// もしコマンドが指定されない場合は start ってことにする
+		return "start", nil
 	}
 	var commands = []string{"start", "config"}
 	inputCommand := args[0]
