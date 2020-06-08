@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -70,7 +71,31 @@ func getSheetClient(config *jwt.Config) (*sheets.Service, error) {
 	return srv, nil
 }
 
-func main() {
+func getCommand(args []string) (string, error) {
+	if len(args) == 0 {
+		return "", fmt.Errorf("invalid command")
+	}
+	var commands = []string{"start", "config"}
+	inputCommand := args[0]
+	for _, v := range commands {
+		if v == inputCommand {
+			return inputCommand, nil
+		}
+	}
+	return "", fmt.Errorf("unknown command: %s", inputCommand)
+}
+
+func isValidConfigItems(item string) bool {
+	var configItem = []string{"spreadSheetID", "updateCell"}
+	for _, v := range configItem {
+		if v == item {
+			return true
+		}
+	}
+	return false
+}
+
+func start() {
 	start := time.Now()
 	fmt.Printf("\x1b[36m%s\x1b[0m", "press Enter to stop your stopwatch!\n")
 	bufio.NewScanner(os.Stdin).Scan()
@@ -107,4 +132,20 @@ func main() {
 		log.Fatalf("Unable to retrieve data from sheet. %v", err)
 	}
 	fmt.Printf("Success to update cell!\nIf you'd like to confirm the sheet, access:\nhttps://docs.google.com/spreadsheets/d/%s/edit#gid=0\n", spreadSheetID)
+}
+
+func main() {
+	flag.Parse()
+	command, err := getCommand(flag.Args())
+	if err != nil {
+		log.Fatal(err)
+	}
+	switch command {
+	case "start":
+		start()
+	case "config":
+		// TODO: configというコマンドでtomlファイルをいじれるようにする？
+		return
+	}
+
 }
